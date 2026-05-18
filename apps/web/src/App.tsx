@@ -5,7 +5,8 @@ import type { AnalysisMode } from '@ai-codebase-explainer/shared';
 
 const browserHost = typeof window !== 'undefined' ? window.location.hostname : '';
 const isLocalBrowser = browserHost === 'localhost' || browserHost === '127.0.0.1';
-const apiUrl = (import.meta.env.VITE_API_URL || (isLocalBrowser ? 'http://localhost:8000' : '')).replace(/\/$/, '');
+const hostedApiFallback = 'https://ai-codebase-explainer-api-4ovg.onrender.com';
+const apiUrl = (import.meta.env.VITE_API_URL || (isLocalBrowser ? 'http://localhost:8000' : hostedApiFallback)).replace(/\/$/, '');
 const apiTimeoutMs = Number(import.meta.env.VITE_API_TIMEOUT_MS || 15000);
 const repoUrl = import.meta.env.VITE_REPO_URL || 'https://github.com/YOUR_USERNAME/ai-codebase-explainer';
 const dashboardUrl = import.meta.env.VITE_OBSERVABILITY_DASHBOARD_URL || 'https://calebdani23.github.io/ai-agent-observability-dashboard/';
