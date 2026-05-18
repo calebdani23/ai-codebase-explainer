@@ -1,0 +1,44 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Node / Vite
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Local data and temp analysis workspaces
+.cache/
+tmp/
+data/
+coverage/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Preserve existing runtime/tooling dirs but do not track generated internals
+.gentle-ai-bin/
+.gentle-ai-runtime/
+.gentle-home/
+.opencode-bin/
+.opencode-runtime/
+.opencode/node_modules/

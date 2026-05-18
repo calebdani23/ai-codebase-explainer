@@ -1,0 +1,20 @@
+{
+  "name": "ai-codebase-explainer",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI-powered engineering assistant for repository understanding, architecture review and issue triage.",
+  "workspaces": [
+    "apps/web",
+    "packages/shared",
+    "packages/observability-client"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev",
+    "build:web": "npm --workspace apps/web run build",
+    "preview:web": "npm --workspace apps/web run preview",
+    "typecheck": "npm --workspace apps/web run typecheck && npm --workspace packages/shared run typecheck && npm --workspace packages/observability-client run typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

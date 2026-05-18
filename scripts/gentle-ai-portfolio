@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO="$HOME/srv/projects/ai-codebase-explainer"
+source "$REPO/scripts/ai-env.sh"
+
+exec "$REPO/.gentle-ai-bin/gentle-ai" "$@"

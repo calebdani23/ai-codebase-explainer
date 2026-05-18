@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REAL_HOME="$HOME"
+REPO="$REAL_HOME/srv/projects/ai-codebase-explainer"
+GENTLE_HOME="$REPO/.gentle-home"
+
+if [ ! -d "$REPO" ]; then
+  echo "ERROR: Repo not found at $REPO"
+  exit 1
+fi
+
+if [ ! -x "$REPO/.gentle-ai-bin/gentle-ai" ]; then
+  echo "ERROR: Gentle-AI binary not found at $REPO/.gentle-ai-bin/gentle-ai"
+  exit 1
+fi
+
+cd "$REPO"
+
+mkdir -p "$GENTLE_HOME/.cache/opencode"
+mkdir -p "$GENTLE_HOME/.config/opencode"
+mkdir -p "$GENTLE_HOME/.local/share/opencode"
+mkdir -p "$GENTLE_HOME/.gentle-ai/cache"
+
+# Hydrate models cache from working OpenCode runtime.
+if [ -d "$REPO/.opencode-runtime/cache/opencode" ]; then
+  cp -a "$REPO/.opencode-runtime/cache/opencode/." "$GENTLE_HOME/.cache/opencode/"
+fi
+
+# Copy auth from working OpenCode runtime.
+if [ -f "$REPO/.opencode-runtime/data/opencode/auth.json" ]; then
+  install -m 600 "$REPO/.opencode-runtime/data/opencode/auth.json" "$GENTLE_HOME/.local/share/opencode/auth.json"
+fi
+
+# IMPORTANT:
+# Do not preserve symlinked opencode.json. Gentle-AI refuses symlinks.
+if [ -f "$REPO/opencode.json" ]; then
+  rm -f "$GENTLE_HOME/.config/opencode/opencode.json"
+  cp -f "$REPO/opencode.json" "$GENTLE_HOME/.config/opencode/opencode.json"
+  chmod 600 "$GENTLE_HOME/.config/opencode/opencode.json"
+fi
+
+export HOME="$GENTLE_HOME"
+export PATH="$REPO/.gentle-ai-bin:$REPO/.opencode-bin:$PATH"
+
+export XDG_CACHE_HOME="$GENTLE_HOME/.cache"
+export XDG_CONFIG_HOME="$GENTLE_HOME/.config"
+export XDG_DATA_HOME="$GENTLE_HOME/.local/share"
+
+set +e
+"$REPO/.gentle-ai-bin/gentle-ai" "$@"
+status=$?
+set -e
+
+# Mirror changed OpenCode config back to repo runtime as real files.
+mkdir -p "$REPO/.opencode-runtime/config/opencode"
+
+if [ -f "$GENTLE_HOME/.config/opencode/opencode.json" ]; then
+  rm -f "$REPO/.opencode-runtime/config/opencode/opencode.json"
+  cp -f "$GENTLE_HOME/.config/opencode/opencode.json" "$REPO/.opencode-runtime/config/opencode/opencode.json"
+
+  # Also mirror to root opencode.json, because that is your project config.
+  cp -f "$GENTLE_HOME/.config/opencode/opencode.json" "$REPO/opencode.json"
+fi
+
+exit "$status"
