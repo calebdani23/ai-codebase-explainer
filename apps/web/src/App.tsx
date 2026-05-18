@@ -3,7 +3,10 @@ import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } fro
 
 import type { AnalysisMode } from '@ai-codebase-explainer/shared';
 
-const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+const browserHost = typeof window !== 'undefined' ? window.location.hostname : '';
+const isLocalBrowser = browserHost === 'localhost' || browserHost === '127.0.0.1';
+const apiUrl = (import.meta.env.VITE_API_URL || (isLocalBrowser ? 'http://localhost:8000' : '')).replace(/\/$/, '');
+const apiTimeoutMs = Number(import.meta.env.VITE_API_TIMEOUT_MS || 15000);
 const repoUrl = import.meta.env.VITE_REPO_URL || 'https://github.com/YOUR_USERNAME/ai-codebase-explainer';
 const dashboardUrl = import.meta.env.VITE_OBSERVABILITY_DASHBOARD_URL || 'https://calebdani23.github.io/ai-agent-observability-dashboard/';
 const frontendDemoMode = import.meta.env.VITE_DEMO_MODE !== 'false';
@@ -213,10 +216,29 @@ function getStoredAnalysis(id: string) {
 }
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiUrl}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-    ...init,
-  });
+  if (!apiUrl) {
+    throw new Error('Hosted backend API is not configured. Set VITE_API_URL to your Render/Koyeb backend URL and redeploy GitHub Pages.');
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), apiTimeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(`The backend did not respond within ${Math.round(apiTimeoutMs / 1000)} seconds. Check VITE_API_URL, backend health, or use demo fallback.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
   if (!response.ok) {
     const detail = await response.text();
     throw new Error(detail || `Request failed with ${response.status}`);
