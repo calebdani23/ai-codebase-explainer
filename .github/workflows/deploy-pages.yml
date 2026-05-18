@@ -21,16 +21,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.x
           cache: npm
+      - uses: actions/configure-pages@v5
       - run: npm ci
-      - run: GITHUB_PAGES=true npm run build:web
+      - name: Build static web app
+        run: GITHUB_PAGES=true npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_DEMO_MODE: "true"
           VITE_REPO_URL: https://github.com/${{ github.repository }}
           VITE_OBSERVABILITY_DASHBOARD_URL: https://calebdani23.github.io/ai-agent-observability-dashboard/
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/web/dist

@@ -7,8 +7,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     environment: str = "development"
     demo_mode: bool = True
+    database_url: str = "sqlite:///./local_dev.db"
     cors_origins: str = Field(
-        default="http://localhost:5173,http://127.0.0.1:5173,https://YOUR_GITHUB_USERNAME.github.io,https://YOUR_GITHUB_USERNAME.github.io/ai-codebase-explainer"
+        default="http://localhost:5173,http://127.0.0.1:5173,https://YOUR_GITHUB_USERNAME.github.io"
     )
     port: int = 8000
 

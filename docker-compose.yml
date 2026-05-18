@@ -5,11 +5,25 @@ services:
     env_file:
       - .env.example
     environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/ai_codebase_explainer
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
       PORT: 8000
     ports:
       - "8000:8000"
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ai_codebase_explainer
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   web:
     image: node:22-alpine
@@ -24,3 +38,6 @@ services:
     command: sh -c "npm install && npm run dev:web -- --host 0.0.0.0"
     depends_on:
       - api
+
+volumes:
+  postgres_data:
