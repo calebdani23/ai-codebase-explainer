@@ -2,30 +2,66 @@
 
 AI-powered engineering assistant for repository understanding, architecture review and issue triage.
 
-## What it solves
+## 2-minute overview
 
-This project helps teams quickly understand a software repository, identify its stack and architecture, and convert technical findings into actionable issues. The MVP is designed to work in demo/deterministic mode without an OpenAI key.
+This project turns a public GitHub repository into a concise engineering brief: detected stack, architecture summary, important files, risk signals, suggested GitHub issues, exportable reports and an “Ask your codebase” chat backed by the persisted analysis context.
 
-## Features planned
+It is designed as a serious portfolio product, not a toy chat demo:
 
-- Repository intake for public GitHub URLs and demo repositories.
-- Static codebase scanning with safety limits and secret redaction.
-- Stack detection, architecture summaries and important file mapping.
-- Suggested issue triage with severity, priority, confidence, effort, related files and GitHub-ready Markdown.
-- Optional AI-assisted issue generation and chat when `OPENAI_API_KEY` is configured; deterministic heuristics remain the fallback.
-- Ask your codebase chat by analysis ID with keyword/chunk retrieval, related files and non-blocking observability traces.
-- Optional integration with the AI Agent Observability Dashboard.
+- **Works without paid AI services:** deterministic demo and heuristic issue generation run without `OPENAI_API_KEY`.
+- **Safe by default:** public repositories only, static scanning only, generated/heavy folders ignored, secret-like content redacted, no analyzed code is executed.
+- **Deployable on free tiers:** GitHub Pages frontend, Render/Koyeb backend and Neon/Supabase Postgres.
+- **Observable AI story:** first I built the [AI Agent Observability Dashboard](https://calebdani23.github.io/ai-agent-observability-dashboard/); then I built this repository-analysis product and instrumented it to emit traces into that dashboard.
 
-## Architecture
+## Product surfaces
 
-- `apps/web`: Vite + React + TypeScript frontend, hash routing and GitHub Pages-ready config.
-- `apps/api`: FastAPI backend with `/health`, CORS, SQLModel persistence, demo plus public GitHub analysis endpoints and Render/Koyeb-ready start command.
+- Landing page that explains the product and portfolio story quickly.
+- Repository intake for public GitHub URLs or deterministic demo analysis.
+- Analysis overview with status, file counts, languages, stack, risk, duration and trace status.
+- Architecture explorer with file tree, important modules and selected file/folder details.
+- Issue triage table with severity, priority, confidence, effort, related files and copy-ready Markdown.
+- Ask Your Codebase chat with related files and supporting snippets.
+- Observability view showing whether analysis/chat traces were disabled, sent or failed.
+- Markdown and JSON exports for sharing analysis results.
+
+## Screenshots / placeholders
+
+Presentation-ready placeholders live in [`docs/screenshots`](docs/screenshots/) and can be replaced with real captures after deployment:
+
+| Surface | Placeholder |
+| --- | --- |
+| Landing + product story | [`landing-placeholder.svg`](docs/screenshots/landing-placeholder.svg) |
+| Analysis dashboard | [`analysis-placeholder.svg`](docs/screenshots/analysis-placeholder.svg) |
+| Observability trace story | [`observability-placeholder.svg`](docs/screenshots/observability-placeholder.svg) |
+
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+  U[User / Recruiter] --> W[GitHub Pages React UI]
+  W -->|public config + analysis requests| A[FastAPI backend]
+  A -->|download public ZIP| G[GitHub repository]
+  A --> S[Static scanner\nfilter, chunk, redact]
+  S --> H[Heuristic analysis\nstack + architecture + issues]
+  H --> DB[(Postgres\nNeon/Supabase)]
+  A -. optional .-> OAI[OpenAI\nsummary, issues, chat]
+  A -. non-blocking .-> OBS[AI Agent Observability Dashboard\nPOST /api/traces]
+  W -->|safe status only| OBSUI[Trace status view]
+  DB --> A
+```
+
+See [`docs/architecture.md`](docs/architecture.md) and [`docs/analysis-pipeline.md`](docs/analysis-pipeline.md) for the deeper engineering notes.
+
+## Repository structure
+
+- `apps/web`: Vite + React + TypeScript frontend with hash routing for GitHub Pages.
+- `apps/api`: FastAPI backend with health, config, demo analysis, public GitHub analysis, chat, observability and export endpoints.
 - `packages/shared`: shared TypeScript contracts.
 - `packages/observability-client`: optional non-blocking trace client scaffold.
-- `examples/demo-repos`: demo inputs for deterministic analysis.
-- `docs`: architecture, deployment, issue schema, demo script and observability notes.
+- `examples/demo-repos`: deterministic demo input.
+- `docs`: architecture, deployment, issue schema, demo script, roadmap, observability notes and screenshot placeholders.
 
-## Local commands
+## Local development
 
 Install frontend/workspace dependencies:
 
@@ -39,18 +75,6 @@ Run frontend:
 npm run dev:web
 ```
 
-The frontend uses hash routing for GitHub Pages. Main UI routes are:
-
-- `/#/` landing page with value cards and observability story.
-- `/#/analyze` repository intake for public GitHub URLs or deterministic demo analysis.
-- `/#/analysis/<analysis_id>` professional overview with summary cards, stack, folders, entry points, issues and trace status.
-- `/#/analysis/<analysis_id>/architecture` file tree and selected file/folder details.
-- `/#/analysis/<analysis_id>/issues` issue triage table and copy-ready Markdown detail view.
-- `/#/analysis/<analysis_id>/chat` Phase 6 chat shell backed by existing analysis context.
-- `/#/analysis/<analysis_id>/observability` trace status and AI Agent Observability Dashboard integration view.
-
-If the live API is unavailable while demo mode is enabled, the demo intake path can open a deterministic session-local analysis so the product UI remains demoable without secrets or paid services.
-
 Run backend:
 
 ```bash
@@ -61,7 +85,7 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-For local development without Postgres, the API defaults to `sqlite:///./local_dev.db` if no `DATABASE_URL` is provided. This is only a developer fallback. Production deployments should set `DATABASE_URL` to Neon, Supabase or another Postgres-compatible database.
+For local development without Postgres, the API defaults to `sqlite:///./local_dev.db` if no `DATABASE_URL` is provided. Production should use Postgres via Neon, Supabase or another compatible database.
 
 Check health:
 
@@ -69,14 +93,17 @@ Check health:
 curl http://localhost:8000/health
 ```
 
-Create and inspect a deterministic demo analysis:
+## Demo analysis
+
+From the UI, open `/#/analyze?demo=true`, keep **Use demo repository** selected and start analysis. If the live API is unavailable while demo mode is enabled, the frontend can still open a deterministic session-local analysis for presentations.
+
+From the API:
 
 ```bash
 curl -X POST http://localhost:8000/api/demo/analyze \
   -H 'Content-Type: application/json' \
   -d '{"demo_repo":"react-fastapi-saas","analysis_mode":"quick","send_observability":false}'
 
-curl http://localhost:8000/api/analyses
 curl http://localhost:8000/api/analyses/<analysis_id>
 curl http://localhost:8000/api/analyses/<analysis_id>/issues
 curl -X POST http://localhost:8000/api/analyses/<analysis_id>/chat \
@@ -87,37 +114,43 @@ curl http://localhost:8000/api/analyses/<analysis_id>/export.md
 curl http://localhost:8000/api/analyses/<analysis_id>/export.json
 ```
 
-Analyze a small public GitHub repository with the static Phase 3 scanner:
+## Public GitHub analysis
 
 ```bash
 curl -X POST http://localhost:8000/api/repositories/analyze \
   -H 'Content-Type: application/json' \
   -d '{"repository_url":"https://github.com/octocat/Hello-World","analysis_mode":"quick","send_observability":false}'
-
-curl http://localhost:8000/api/analyses/<analysis_id>
 ```
 
-The backend downloads a GitHub ZIP archive into a temporary workspace, scans text-like files only, ignores heavy/generated folders, redacts common secret patterns before persistence, creates file/chunk records, and deletes the temporary workspace. It never installs dependencies or executes code from analyzed repositories. Optional `GITHUB_TOKEN` is backend-only and only used for GitHub API rate limits/public access.
+The backend downloads a public GitHub ZIP archive into a temporary workspace, scans text-like files only, ignores heavy/generated folders, redacts common secret patterns before persistence, creates file/chunk records and deletes the temporary workspace. Optional `GITHUB_TOKEN` is backend-only and only used for public GitHub rate limits/access.
 
-Issue triage works without paid services. The backend first builds deterministic findings for documentation gaps, missing tests, missing `.env.example`, API validation signals, oversized files, missing lockfiles, missing CI and committed `.env` paths. If `OPENAI_API_KEY` is set, the backend may ask OpenAI for structured JSON issues, validates/sanitizes the response, and automatically falls back to heuristics if the AI call fails or returns invalid JSON.
+## Environment variables
 
-Ask Your Codebase works the same way: `POST /api/analyses/<analysis_id>/chat` retrieves relevant persisted chunks, files and suggested issues with deterministic keyword scoring. If `OPENAI_API_KEY` is configured, the backend uses OpenAI with the retrieved context only; if the key is absent or the call fails, it returns a deterministic answer that still includes related files and snippets when possible.
+Copy `.env.example` to `.env` locally if needed. Do not commit `.env` files or real keys.
 
-Dedicated export endpoints:
+- Backend: `DATABASE_URL`, `CORS_ORIGINS`, `DEMO_MODE`, `OPENAI_API_KEY` optional, `OPENAI_MODEL`, `GITHUB_TOKEN` optional, `MAX_REPO_SIZE_MB`, `MAX_FILE_SIZE_KB`, `MAX_FILES_ANALYZED`, `OBSERVABILITY_*`, `PORT`.
+- Frontend: `VITE_API_URL`, `VITE_DEMO_MODE`, `VITE_REPO_URL`, `VITE_OBSERVABILITY_DASHBOARD_URL`.
 
-- `GET /api/analyses/<analysis_id>/issues` returns persisted suggested issues.
-- `POST /api/analyses/<analysis_id>/chat` answers questions with `answer`, `related_files`, `supporting_chunks`, `mode`, `source` and `observability_status`.
-- `GET /api/analyses/<analysis_id>/observability` returns safe trace metadata for the UI: enabled state, send status, trace ID, operations, step summaries and any non-secret delivery error.
-- `GET /api/analyses/<analysis_id>/export.md` returns a human-readable Markdown report.
-- `GET /api/analyses/<analysis_id>/export.json` returns the structured analysis detail object.
+Frontend variables are public and compiled into the static bundle. Never expose backend-only secrets such as `OPENAI_API_KEY`, `GITHUB_TOKEN`, `DATABASE_URL` or `OBSERVABILITY_INGEST_API_KEY` with a `VITE_` prefix.
 
-Run with Docker Compose:
+## Observability integration
 
-```bash
-docker compose up --build
-```
+The conceptual story is intentional: **first observability platform, then an instrumented AI product built on top of it**.
 
-Build frontend:
+Set backend-only variables `OBSERVABILITY_ENABLED=true`, `OBSERVABILITY_API_URL=<dashboard backend URL>`, `OBSERVABILITY_INGEST_API_KEY=<ingest key>` and `OBSERVABILITY_APP_NAME=ai-codebase-explainer` to emit `POST /api/traces` payloads. Analysis traces cover repository scan, stack detection, architecture summary and issue triage; chat traces cover retrieval and answer generation. Delivery is non-blocking, so failed telemetry never blocks analysis/chat responses.
+
+More detail: [`docs/observability-integration.md`](docs/observability-integration.md).
+
+## Deployment
+
+- Frontend: GitHub Pages via `.github/workflows/deploy-pages.yml`. Vite uses base `/ai-codebase-explainer/` during Pages builds and hash routing (`/#/...`) to avoid direct-route 404s.
+- Backend: Render or Koyeb using `apps/api` as root, `pip install -r requirements.txt` as build command and `uvicorn main:app --host 0.0.0.0 --port $PORT` as start command.
+- Database: Neon, Supabase or another Postgres-compatible database via backend-only `DATABASE_URL`.
+- CORS: set backend `CORS_ORIGINS` to local origins plus the GitHub Pages origin, for example `http://localhost:5173,http://127.0.0.1:5173,https://YOUR_GITHUB_USERNAME.github.io`.
+
+See [`docs/deployment.md`](docs/deployment.md) for the full checklist.
+
+## Build verification
 
 ```bash
 npm run build
@@ -125,33 +158,6 @@ npm run build
 npm run build:web
 ```
 
-## Environment variables
-
-Copy `.env.example` to `.env` locally if needed. Do not commit `.env` files or real keys.
-
-Important backend variables: `DATABASE_URL`, `CORS_ORIGINS`, `DEMO_MODE`, `OPENAI_API_KEY` optional for backend-only AI issue triage, `OPENAI_MODEL`, `GITHUB_TOKEN` optional, `MAX_REPO_SIZE_MB`, `MAX_FILE_SIZE_KB`, `MAX_FILES_ANALYZED`, `OBSERVABILITY_*`, `PORT`. `DATABASE_URL` should be Postgres in hosted environments; SQLite is documented only as a local fallback.
-
-Important frontend variables: `VITE_API_URL`, `VITE_DEMO_MODE`, `VITE_REPO_URL`, `VITE_OBSERVABILITY_DASHBOARD_URL`.
-
-Frontend variables are public and compiled into the static bundle. Never expose backend-only secrets such as `OPENAI_API_KEY`, `GITHUB_TOKEN`, `DATABASE_URL` or `OBSERVABILITY_INGEST_API_KEY` with a `VITE_` prefix.
-
-## Observability story
-
-This project is instrumented with the prior [AI Agent Observability Dashboard](https://calebdani23.github.io/ai-agent-observability-dashboard/). Set backend-only variables `OBSERVABILITY_ENABLED=true`, `OBSERVABILITY_API_URL=<dashboard backend URL>`, `OBSERVABILITY_INGEST_API_KEY=<ingest key>` and `OBSERVABILITY_APP_NAME=ai-codebase-explainer` to emit `POST /api/traces` payloads. Analysis traces include `analyze_repository`, stack detection, architecture summary and issue triage steps; chat traces use `ask_codebase` with retrieval and answer-generation steps. Delivery is non-blocking: if the dashboard is down or credentials are invalid, analysis/chat responses still succeed and the UI shows `failed` with safe metadata.
-
-## Deployment
-
-- Frontend: GitHub Pages via `.github/workflows/deploy-pages.yml`. The app uses Vite base `/ai-codebase-explainer/` during Pages builds and hash routing (`/#/...`) to avoid direct-route 404s.
-- Backend: Render or Koyeb free web service using `apps/api` as root, `pip install -r requirements.txt` as the build command and `uvicorn main:app --host 0.0.0.0 --port $PORT` as the start command.
-- Database: Neon, Supabase or another Postgres-compatible database via backend-only `DATABASE_URL`.
-- CORS: set backend `CORS_ORIGINS` to local origins plus the GitHub Pages origin, for example `http://localhost:5173,http://127.0.0.1:5173,https://YOUR_GITHUB_USERNAME.github.io`. Do not include `/ai-codebase-explainer` in CORS origins.
-
-See `docs/deployment.md` for details.
-
-## Screenshots
-
-Screenshots will be added after the UI flows are implemented.
-
 ## Roadmap
 
-See `docs/roadmap.md`. Phase 1 establishes the project structure, Vite frontend, FastAPI backend, Docker Compose, health check, CORS, docs and safe environment placeholders.
+The MVP now covers phases 1-9: setup, data model/demo analysis, public static scanner, issue triage, product UI, codebase chat, observability integration, deployment preparation and portfolio polish. Next improvements are listed in [`docs/roadmap.md`](docs/roadmap.md).

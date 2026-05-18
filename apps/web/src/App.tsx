@@ -322,16 +322,25 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function Landing() {
+  const proofPoints = [
+    ['42', 'demo files analyzed'],
+    ['5', 'product surfaces'],
+    ['0', 'frontend secrets'],
+  ];
+
   return (
     <main className="hero-grid">
       <section className="hero-card glow-card">
-        <span className="eyebrow">AI-powered engineering assistant</span>
+        <span className="eyebrow">Portfolio-ready AI engineering product</span>
         <h1>AI Codebase Explainer & Issue Triage</h1>
-        <p className="lead">Understand repositories, map architecture and generate actionable engineering issues with AI.</p>
+        <p className="lead">Turn a public GitHub repository into an architecture brief, stack map, risk review and copy-ready engineering backlog in minutes.</p>
         <div className="actions">
           <Link className="button primary" to="/analyze">Analyze Repository</Link>
           <Link className="button" to="/analyze?demo=true">Try Demo Repository</Link>
           <a className="button ghost" href={repoUrl}>View GitHub</a>
+        </div>
+        <div className="proof-grid">
+          {proofPoints.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}
         </div>
         <div className="badges">
           <span>Static scanner fallback</span>
@@ -340,14 +349,36 @@ function Landing() {
         </div>
       </section>
 
-      <section className="panel product-card">
-        <span className="eyebrow">What teams get</span>
+      <section className="panel product-card product-preview">
+        <span className="eyebrow">Live product shape</span>
+        <h2>From repo URL to engineering decision pack</h2>
+        <div className="preview-window">
+          <div className="window-bar"><i /><i /><i /></div>
+          <div className="preview-metrics">
+            <article><span>Risk</span><strong>medium</strong></article>
+            <article><span>Issues</span><strong>8 drafts</strong></article>
+            <article><span>Trace</span><strong>sent</strong></article>
+          </div>
+          <div className="preview-list">
+            <p><b>Architecture:</b> React/Vite frontend, FastAPI backend, SQLModel persistence.</p>
+            <p><b>Top issue:</b> Add intake flow smoke tests before scaling analysis modes.</p>
+            <p><b>Ask:</b> “Which files should I read first?” returns file-backed context.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel wide quick-story">
+        <div>
+          <span className="eyebrow">What it proves</span>
+          <h2>A practical AI tool, not a toy chat demo</h2>
+          <p>It demonstrates product thinking, static-analysis safety, deterministic fallbacks, backend-owned secrets, exportable artifacts and observability-first AI engineering.</p>
+        </div>
         <div className="feature-list">
           {[
             ['Architecture summary', 'High-level explanation of structure, entry points and important modules.'],
             ['Stack detection', 'Language and framework signals extracted from repository files.'],
             ['AI issue triage', 'Prioritized tickets with evidence, confidence, effort and markdown export.'],
-            ['Ask your codebase', 'Phase-6-ready contextual Q&A shell over the current analysis.'],
+            ['Ask your codebase', 'Contextual Q&A over persisted analysis chunks with related files.'],
             ['Observability integrated', 'Trace status surfaced in the UI for the portfolio story.'],
           ].map(([feature, text]) => (
             <article key={feature}>
@@ -358,12 +389,18 @@ function Landing() {
         </div>
       </section>
 
+      <section className="panel wide workflow-strip">
+        {['Submit public repo or demo', 'Scan safely without execution', 'Map stack and architecture', 'Generate issue drafts', 'Inspect trace story'].map((step, index) => (
+          <article key={step}><span>{index + 1}</span><strong>{step}</strong></article>
+        ))}
+      </section>
+
       <section className="panel wide observability-story">
         <div>
           <span className="eyebrow">Portfolio integration</span>
-          <h2>Instrumented with AI Agent Observability Dashboard</h2>
+          <h2>Built after, and instrumented by, AI Agent Observability Dashboard</h2>
           <p>
-            This project is instrumented with my AI Agent Observability Dashboard, so repository analysis runs can be monitored as traces with LLM calls, tool usage, latency, cost and errors.
+            First came the observability platform for AI agents. This project is the next layer: a repository-analysis product that can emit non-blocking traces for scans, retrieval, LLM calls, issue triage, latency and errors into that dashboard.
           </p>
         </div>
         <a className="button" href={dashboardUrl}>Open dashboard</a>
